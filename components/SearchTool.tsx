@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { searchGrounding } from '../services/gemini';
 import { SearchResult } from '../types';
+import { Search, Globe2, ExternalLink, Key, Sparkles, AlertCircle } from 'lucide-react';
 
 interface SearchToolProps {
   isArabic: boolean;
@@ -11,89 +12,109 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<{ text: string, sources: SearchResult[] } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [errorType, setErrorType] = useState<string | null>(null);
 
   const handleSearch = async () => {
     if (!query.trim() || isSearching) return;
-
     setIsSearching(true);
+    setErrorType(null);
     try {
       const data = await searchGrounding(query);
-      setResult(data);
+      if (data.error === "ERROR_KEY_MISSING") {
+        setErrorType("KEY");
+      } else if (data.error) {
+        setErrorType("GENERIC");
+      } else {
+        setResult(data);
+      }
     } catch (err) {
-      console.error(err);
+      setErrorType("GENERIC");
     } finally {
       setIsSearching(false);
     }
   };
 
+  const openKeyDialog = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      window.location.reload();
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-in zoom-in duration-500 max-w-4xl mx-auto">
-      <div className="text-center space-y-2 mb-8">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-          {isArabic ? 'استكشاف الويب الذكي' : 'Intelligent Web Explore'}
+    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
+      <div className="text-center space-y-1 mb-6">
+        <h2 className="text-lg font-black text-white flex items-center justify-center gap-2">
+          <Globe2 className="w-4 h-4 text-red-500" />
+          <span className="tracking-widest uppercase">{isArabic ? 'استكشاف الويب' : 'Web Exploration'}</span>
         </h2>
-        <p className="text-slate-400">
-          {isArabic ? 'احصل على إجابات مدعومة بأحدث المعلومات من الإنترنت.' : 'Get answers backed by the latest information from the web.'}
+        <p className="text-[10px] text-red-200/40 uppercase tracking-tighter">
+          {isArabic ? 'بحث مباشر ومدعوم بالمصادر' : 'Real-time source-backed intelligence'}
         </p>
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder={isArabic ? 'ابحث عن أي شيء (مثل: أخبار اليوم في التكنولوجيا)...' : 'Search for anything (e.g., Today tech news)...'}
-            className="w-full bg-slate-950 border border-slate-700 rounded-2xl pl-12 pr-6 py-4 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-          />
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+          <Search className="w-4 h-4 text-red-900/40 group-focus-within:text-red-500 transition-colors" />
         </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          placeholder={isArabic ? 'عن ماذا تبحث؟' : 'What are you looking for?'}
+          className="w-full bg-black/40 border border-red-900/10 rounded-full pl-12 pr-28 py-3 text-[13px] text-white focus:outline-none focus:border-red-600/50 transition-all placeholder:text-red-900/30"
+        />
         <button
           onClick={handleSearch}
           disabled={isSearching || !query.trim()}
-          className="px-8 py-4 bg-amber-600 hover:bg-amber-500 disabled:bg-slate-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-amber-900/20"
+          className="absolute right-1.5 top-1.5 bottom-1.5 px-6 bg-red-600 hover:bg-red-500 disabled:bg-red-950/40 text-white text-[11px] font-black rounded-full transition-all flex items-center gap-2"
         >
-          {isSearching ? (isArabic ? 'جاري البحث...' : 'Searching...') : (isArabic ? 'ابحث' : 'Search')}
+          {isSearching ? <Sparkles className="w-3 h-3 animate-spin" /> : null}
+          {isSearching ? (isArabic ? 'جاري...' : '...') : (isArabic ? 'بحث' : 'Search')}
         </button>
       </div>
 
+      {errorType === "KEY" && (
+        <div className="glass p-6 rounded-2xl border-amber-600/20 text-center space-y-4">
+           <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+           <p className="text-[12px] text-amber-200/70">{isArabic ? 'ميزة البحث تتطلب مفتاح API صالح. يرجى تنشيط المفتاح.' : 'Web search requires a valid API key. Please activate.'}</p>
+           <button onClick={openKeyDialog} className="flex items-center gap-2 mx-auto px-5 py-2 bg-amber-600 text-white rounded-full text-[10px] font-black uppercase hover:bg-amber-500 transition-all">
+             <Key className="w-3 h-3" /> {isArabic ? 'تنشيط المفتاح الآن' : 'Activate Key Now'}
+           </button>
+        </div>
+      )}
+
       {isSearching && (
-        <div className="space-y-4">
-          <div className="h-4 bg-slate-800 rounded animate-pulse w-3/4"></div>
-          <div className="h-4 bg-slate-800 rounded animate-pulse w-full"></div>
-          <div className="h-4 bg-slate-800 rounded animate-pulse w-5/6"></div>
+        <div className="space-y-3 px-4">
+          <div className="h-2 bg-red-950/20 rounded-full animate-pulse w-3/4"></div>
+          <div className="h-2 bg-red-950/20 rounded-full animate-pulse w-full"></div>
+          <div className="h-2 bg-red-950/20 rounded-full animate-pulse w-5/6"></div>
         </div>
       )}
 
       {result && !isSearching && (
-        <div className="glass p-8 rounded-3xl space-y-8">
-          <div className="prose prose-invert max-w-none text-slate-200 leading-relaxed text-lg">
+        <div className="glass p-6 rounded-[1.5rem] border-red-900/10 space-y-6">
+          <div className="text-[13px] text-red-50/80 leading-relaxed whitespace-pre-wrap">
             {result.text}
           </div>
 
           {result.sources.length > 0 && (
-            <div className="pt-6 border-t border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">
-                {isArabic ? 'المصادر المرجعية' : 'Verification Sources'}
+            <div className="pt-4 border-t border-red-900/10">
+              <h4 className="text-[9px] font-black text-red-500 mb-3 uppercase tracking-widest">
+                {isArabic ? 'المصادر الموثوقة' : 'Trusted Sources'}
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {result.sources.map((source, i) => (
                   <a
                     key={i}
                     href={source.uri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 hover:border-amber-500/30 transition-all group"
+                    className="flex items-center justify-between p-2.5 bg-black/20 border border-red-900/5 rounded-xl hover:border-red-600/30 transition-all group"
                   >
-                    <div className="w-8 h-8 flex-shrink-0 bg-slate-800 rounded flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium text-slate-300 truncate">{source.title || source.uri}</span>
+                    <span className="text-[11px] text-red-200/60 truncate">{source.title || source.uri}</span>
+                    <ExternalLink className="w-3 h-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </a>
                 ))}
               </div>

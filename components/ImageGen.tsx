@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { generateImage } from '../services/gemini';
 import { GeneratedImage } from '../types';
+import { Palette, Sparkles, Download, Key, AlertCircle } from 'lucide-react';
 
 interface ImageGenProps {
   isArabic: boolean;
@@ -11,121 +12,96 @@ const ImageGen: React.FC<ImageGenProps> = ({ isArabic }) => {
   const [prompt, setPrompt] = useState('');
   const [history, setHistory] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!prompt.trim() || isGenerating) return;
-
     setIsGenerating(true);
-    setError(null);
+    setErrorType(null);
     try {
-      const imageUrl = await generateImage(prompt);
-      if (imageUrl) {
-        setHistory(prev => [{ url: imageUrl, prompt, timestamp: new Date() }, ...prev]);
+      const result = await generateImage(prompt);
+      if (result.error === "ERROR_KEY_MISSING") {
+        setErrorType("KEY");
+      } else if (result.url) {
+        setHistory(prev => [{ url: result.url as string, prompt, timestamp: new Date() }, ...prev]);
         setPrompt('');
       } else {
-        setError(isArabic ? 'فشل إنشاء الصورة. حاول مرة أخرى.' : 'Image generation failed. Try again.');
+        setErrorType("GENERIC");
       }
     } catch (err) {
-      setError(isArabic ? 'حدث خطأ غير متوقع.' : 'An unexpected error occurred.');
+      setErrorType("GENERIC");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const suggestions = [
-    isArabic ? 'رائد فضاء يركب خيلاً في الفضاء' : 'Astronaut riding a horse in space',
-    isArabic ? 'منظر مدينة سايبربانك عند الغروب' : 'Cyberpunk city landscape at sunset',
-    isArabic ? 'قطة لطيفة ترتدي نظارات شمسية' : 'Cute cat wearing sunglasses',
-    isArabic ? 'لوحة زيتية لمنزل ريفي في الشتاء' : 'Oil painting of a countryside house in winter'
-  ];
+  const openKeyDialog = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      window.location.reload();
+    }
+  };
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-      <div className="glass p-8 rounded-3xl">
-        <div className="max-w-3xl mx-auto text-center space-y-6">
-          <h2 className="text-3xl font-bold">{isArabic ? 'ارسم خيالك' : 'Paint Your Imagination'}</h2>
-          <p className="text-slate-400">{isArabic ? 'حول الكلمات إلى صور مذهلة باستخدام تقنية Gemini' : 'Transform words into stunning visuals using Gemini tech'}</p>
-          
-          <div className="flex flex-col md:flex-row gap-3">
-            <input
-              type="text"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={isArabic ? 'اكتب ما تريد رسمه...' : 'Describe what you want to create...'}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-2xl px-6 py-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
-              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
-            >
-              {isGenerating ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.628.288a2 2 0 01-1.645.033l-2.257-.903a5 5 0 00-3.931.144l-.358.156a2 2 0 01-.61.158L2.044 14.65M12 7.757v-3.5m0 0a2.25 2.25 0 10-4.5 0M12 4.257a2.25 2.25 0 114.5 0" />
-                </svg>
-              )}
-              {isGenerating ? (isArabic ? 'جاري الإنشاء...' : 'Generating...') : (isArabic ? 'إنشاء' : 'Generate')}
-            </button>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-2 mt-4">
-            {suggestions.map((s, i) => (
-              <button
-                key={i}
-                onClick={() => setPrompt(s)}
-                className="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full transition-colors border border-slate-700"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+    <div className="max-w-3xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="glass p-6 rounded-[2rem] border-red-900/10 text-center space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-black text-white flex items-center justify-center gap-2">
+            <Palette className="w-4 h-4 text-red-500" />
+            <span className="tracking-widest uppercase">{isArabic ? 'مرسم روبي' : 'Ruby Studio'}</span>
+          </h2>
+          <p className="text-[10px] text-red-200/40 uppercase tracking-widest">{isArabic ? 'حول خيالك إلى حقيقة بصرية' : 'Visualize your imagination'}</p>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {isArabic ? 'الصور المنشأة' : 'Recent Creations'}
-        </h3>
         
-        {history.length === 0 ? (
-          <div className="glass p-12 rounded-3xl text-center border-dashed border-2 border-slate-800">
-            <p className="text-slate-500">{isArabic ? 'لا توجد صور بعد. ابدأ بإنشاء واحدة!' : 'No images yet. Start by creating one!'}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {history.map((item, i) => (
-              <div key={i} className="glass rounded-2xl overflow-hidden group">
-                <div className="aspect-square relative overflow-hidden bg-slate-800">
-                  <img src={item.url} alt={item.prompt} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                    <button 
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = item.url;
-                        link.download = `gemini-gen-${i}.png`;
-                        link.click();
-                      }}
-                      className="w-full py-2 bg-white/20 backdrop-blur-md rounded-lg text-white font-medium hover:bg-white/30 transition-colors"
-                    >
-                      {isArabic ? 'تحميل الصورة' : 'Download'}
-                    </button>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <p className="text-sm text-slate-300 line-clamp-2 italic">"{item.prompt}"</p>
-                </div>
-              </div>
-            ))}
+        <div className="flex flex-col gap-2">
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={isArabic ? 'ماذا تريد أن أرسم لك؟' : 'Describe your vision...'}
+            className="w-full bg-black/40 border border-red-900/10 rounded-2xl px-4 py-3 text-[13px] text-white focus:outline-none focus:border-red-600/50 resize-none h-20 placeholder:text-red-900/30"
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || !prompt.trim()}
+            className="w-full py-3 bg-red-600 hover:bg-red-500 disabled:bg-red-950/40 text-white text-[11px] font-black rounded-full transition-all flex items-center justify-center gap-3 uppercase"
+          >
+            {isGenerating ? <Sparkles className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+            {isGenerating ? (isArabic ? 'جاري الرسم...' : 'Painting...') : (isArabic ? 'بدء التوليد' : 'Generate Art')}
+          </button>
+        </div>
+
+        {errorType === "KEY" && (
+          <div className="p-4 bg-amber-600/10 border border-amber-600/20 rounded-xl space-y-3">
+             <div className="flex items-center justify-center gap-2 text-amber-500">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase">{isArabic ? 'يتطلب مفتاح API' : 'API Key Required'}</span>
+             </div>
+             <button onClick={openKeyDialog} className="flex items-center gap-2 mx-auto px-4 py-2 bg-amber-600 text-white rounded-full text-[9px] font-black uppercase shadow-lg shadow-amber-600/20">
+               <Key className="w-3 h-3" /> {isArabic ? 'ربط المفتاح' : 'Link Key'}
+             </button>
           </div>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {history.map((item, i) => (
+          <div key={i} className="group relative glass rounded-xl overflow-hidden aspect-square border-red-900/10">
+            <img src={item.url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <button 
+                onClick={() => {
+                  const a = document.createElement('a');
+                  a.href = item.url;
+                  a.download = `ruby-art-${i}.png`;
+                  a.click();
+                }}
+                className="p-3 bg-red-600 rounded-full text-white hover:scale-110 transition-transform"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
