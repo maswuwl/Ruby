@@ -9,26 +9,28 @@ const getAI = () => {
 export const chatWithGemini = async (message: string, mediaParts: any[] = []) => {
   try {
     const ai = getAI();
-    const contents = {
-      parts: [
-        { text: message },
-        ...mediaParts
-      ]
-    };
-
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: [contents],
+      model: 'gemini-3-flash-preview',
+      contents: [{
+        parts: [
+          { text: message },
+          ...mediaParts
+        ]
+      }],
       config: {
-        systemInstruction: `You are Ruby, a royal AI advisor and senior engineer. 
-        Maintain a majestic, helpful, and professional tone in Arabic or English.`,
+        systemInstruction: `You are Ruby, a professional AI engineer. 
+        Tone: Minimalist, royal, precise, and helpful. 
+        Language: Match user's language (Arabic/English).`,
       }
     });
     
     return response.text || "Ruby system is processing...";
-  } catch (err) {
+  } catch (err: any) {
     console.error("Gemini Error:", err);
-    return "لقد حدث خطأ في الاتصال بنظام روبي. يرجى التأكد من مفتاح الـ API.";
+    if (err.message?.includes("entity was not found")) {
+        return "ERROR_KEY_MISSING";
+    }
+    return "لقد حدث خطأ في الاتصال بنظام روبي. يرجى التأكد من مفتاح الـ API وتنشيطه.";
   }
 };
 
