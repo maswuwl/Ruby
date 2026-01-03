@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { searchGrounding } from '../services/gemini';
 import { SearchResult } from '../types';
-import { Search, Globe2, ExternalLink, Key, Sparkles, AlertCircle, ShieldAlert, RefreshCw } from 'lucide-react';
+import { Search, Globe2, ExternalLink, Key, Sparkles, ShieldAlert, RefreshCw } from 'lucide-react';
 
 interface SearchToolProps {
   isArabic: boolean;
@@ -37,10 +37,19 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
   };
 
   const activateKey = async () => {
-    if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
-      // بمجرد العودة، نقوم بتصفير الأخطاء ليحاول المستخدم مجدداً
-      setErrorType(null);
+    try {
+      // محاولة الوصول لـ aistudio بشكل مباشر
+      const aiStudio = (window as any).aistudio;
+      if (aiStudio && aiStudio.openSelectKey) {
+        await aiStudio.openSelectKey();
+        // بمجرد النقر، نفترض النجاح ونخفي رسالة الخطأ لنسمح للمستخدم بالمحاولة مجدداً
+        setErrorType(null);
+      } else {
+        // إذا لم تكن الأداة جاهزة، قد يكون المفتاح مفقوداً في البيئة المحلية
+        alert(isArabic ? "أداة تنشيط المفاتيح غير متوفرة حالياً. تأكد من أنك في بيئة تدعم AI Studio." : "API Key activation tool is unavailable.");
+      }
+    } catch (err) {
+      console.error("Activation Error:", err);
     }
   };
 
@@ -79,22 +88,25 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
       </div>
 
       {errorType === "KEY_REQUIRED" && (
-        <div className="glass p-8 rounded-[2rem] border-amber-600/20 text-center space-y-4">
+        <div className="glass p-8 rounded-[2rem] border-amber-600/20 text-center space-y-4 shadow-2xl shadow-amber-900/20 animate-in zoom-in-95">
            <ShieldAlert className="w-10 h-10 text-amber-500 mx-auto" />
            <div className="space-y-2">
               <h3 className="text-sm font-bold text-white uppercase">{isArabic ? 'تنشيط الصلاحيات الملكية مطلوب' : 'Royal Activation Required'}</h3>
               <p className="text-[11px] text-amber-200/60 leading-relaxed max-w-sm mx-auto">
                 {isArabic 
-                  ? 'ميزة البحث تتطلب مفتاح API مرتبطاً بمشروع مدفوع (Pay-as-you-go). يرجى اختيار مفتاحك وتفعيله.' 
-                  : 'Search feature requires a billing-enabled API key. Please select and activate your paid key.'}
+                  ? 'ميزة البحث تتطلب مفتاح API مرتبطاً بمشروع مدفوع (Paid Project). اضغط أدناه لاختيار المفتاح الصحيح.' 
+                  : 'Search feature requires a billing-enabled API key. Click below to select the correct key.'}
               </p>
            </div>
-           <button onClick={activateKey} className="flex items-center gap-3 mx-auto px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[11px] font-black uppercase transition-all shadow-xl shadow-amber-600/20">
-             <Key className="w-3.5 h-3.5" /> {isArabic ? 'ربط وتنشيط المفتاح' : 'Link & Activate Key'}
+           <button 
+             onClick={activateKey} 
+             className="flex items-center gap-3 mx-auto px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[11px] font-black uppercase transition-all shadow-xl shadow-amber-600/30 active:scale-95"
+           >
+             <Key className="w-3.5 h-3.5" /> {isArabic ? 'تنشيط المفتاح الآن' : 'Activate Key Now'}
            </button>
-           <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="block text-[9px] text-amber-500/50 underline uppercase">
-             {isArabic ? 'اقرأ عن تفعيل الفوترة' : 'Read about billing setup'}
-           </a>
+           <p className="text-[9px] text-amber-500/30 uppercase">
+             {isArabic ? 'بعد التنشيط، يمكنك محاولة البحث مرة أخرى مباشرة' : 'Try searching again immediately after activation'}
+           </p>
         </div>
       )}
 

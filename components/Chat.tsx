@@ -3,11 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Message } from '../types';
 import { chatWithGemini } from '../services/gemini';
 import { 
-  Mic, MicOff, Send, Copy, 
-  Layers, Cpu, Sparkles, X,
-  Image as ImageIcon, FolderOpen, Key
+  Send, Copy, Sparkles, ImageIcon, Key
 } from 'lucide-react';
-import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
 
 interface ChatProps {
   isArabic: boolean;
@@ -24,15 +21,10 @@ const Chat: React.FC<ChatProps> = ({ isArabic, lang }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [previewCode, setPreviewCode] = useState<string | null>(null);
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showKeyPrompt, setShowKeyPrompt] = useState(false);
-  
-  const [attachments, setAttachments] = useState<{file: File, type: 'image' | 'video' | 'file', preview?: string}[]>([]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -47,25 +39,24 @@ const Chat: React.FC<ChatProps> = ({ isArabic, lang }) => {
   }, [input]);
 
   const handleSend = async () => {
-    if ((!input.trim() && attachments.length === 0) || isLoading) return;
+    if (!input.trim() || isLoading) return;
     setIsLoading(true);
-    const userMsg: Message = { role: 'user', text: input || 'Media file', timestamp: new Date() };
+    const userMsg: Message = { role: 'user', text: input, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     
     try {
       const responseText = await chatWithGemini(input);
-      if (responseText === "ERROR_KEY_MISSING") {
+      if (responseText === "ERROR_KEY_REQUIRED") {
         setShowKeyPrompt(true);
         setMessages(prev => [...prev, { 
           role: 'model', 
-          text: isArabic ? 'يرجى تنشيط نظام روبي عبر ربط مفتاح API صالح.' : 'Please activate Ruby by linking a valid API Key.', 
+          text: isArabic ? 'يرجى تنشيط مفتاح الـ API للبدء.' : 'Please activate API Key to start.', 
           timestamp: new Date() 
         }]);
       } else {
         setMessages(prev => [...prev, { role: 'model', text: responseText, timestamp: new Date() }]);
       }
       setInput('');
-      setAttachments([]);
     } catch (error) {
       console.error(error);
     } finally {
@@ -74,16 +65,17 @@ const Chat: React.FC<ChatProps> = ({ isArabic, lang }) => {
   };
 
   const openKeyDialog = async () => {
-    if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
+    const aiStudio = (window as any).aistudio;
+    if (aiStudio && aiStudio.openSelectKey) {
+      await aiStudio.openSelectKey();
       setShowKeyPrompt(false);
-      window.location.reload(); // إعادة تحميل لاستخدام المفتاح الجديد
+      // لا نحتاج لـ reload هنا، سنسمح للمستخدم بالمحاولة مباشرة
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-160px)] gap-4 relative">
-      <div className={`flex flex-col glass rounded-[1.5rem] overflow-hidden transition-all duration-500 relative ${previewCode ? 'lg:w-1/2' : 'w-full'}`}>
+    <div className="flex flex-col h-[calc(100vh-160px)] gap-4 relative">
+      <div className="flex flex-col glass rounded-[1.5rem] overflow-hidden w-full relative h-full">
         
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 lg:px-6 space-y-6 pb-24 scrollbar-hide">
           {messages.map((msg, i) => (
@@ -123,20 +115,19 @@ const Chat: React.FC<ChatProps> = ({ isArabic, lang }) => {
           )}
         </div>
 
-        {/* Minimalist Input Container */}
         <div className="absolute bottom-4 left-0 right-0 px-4 flex flex-col items-center pointer-events-none">
           <div className="w-full max-w-xl pointer-events-auto flex flex-col gap-2">
             
             {showKeyPrompt && (
               <button 
                 onClick={openKeyDialog}
-                className="mx-auto flex items-center gap-2 px-4 py-2 bg-amber-600/20 border border-amber-600/30 text-amber-500 rounded-full text-[10px] font-black uppercase hover:bg-amber-600/30 transition-all animate-bounce"
+                className="mx-auto flex items-center gap-2 px-6 py-2.5 bg-amber-600 text-white border border-amber-500 rounded-full text-[10px] font-black uppercase hover:bg-amber-500 transition-all shadow-xl shadow-amber-900/40 active:scale-95"
               >
-                <Key className="w-3 h-3" /> {isArabic ? 'تنشيط مفتاح الـ API' : 'Activate API Key'}
+                <Key className="w-3 h-3" /> {isArabic ? 'تنشيط النظام الملكي الآن' : 'Activate Royal System Now'}
               </button>
             )}
 
-            <div className="glass-premium rounded-full p-1 flex items-center gap-1 border border-red-800/20 shadow-xl bg-black/40">
+            <div className="glass-premium rounded-full p-1 flex items-center gap-1 border border-red-800/20 shadow-xl bg-black/60">
               <div className="flex items-center gap-0.5 ml-1">
                 <button onClick={() => imageInputRef.current?.click()} className="p-2 text-red-400/50 hover:text-white transition-all">
                   <ImageIcon className="w-4 h-4" />
@@ -157,7 +148,7 @@ const Chat: React.FC<ChatProps> = ({ isArabic, lang }) => {
               <button 
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="mr-1 p-2 bg-red-600 hover:bg-red-500 disabled:bg-red-950/40 text-white rounded-full transition-all"
+                className="mr-1 p-2 bg-red-600 hover:bg-red-500 disabled:bg-red-950/40 text-white rounded-full transition-all shadow-lg"
               >
                 <Send className={`w-4 h-4 ${isArabic ? 'rotate-180' : ''}`} />
               </button>
