@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Tool } from '../types';
 import { LayoutDashboard, MessageSquareCode, Palette, Globe2, Sparkles, Diamond, X } from 'lucide-react';
@@ -16,15 +15,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, setActiveTool, isOpen, se
   const isAr = lang === 'ar';
   
   const menuItems = [
-    { id: Tool.DASHBOARD, label: isAr ? 'لوحة العرش' : 'Throne Board', icon: LayoutDashboard },
-    { id: Tool.CHAT, label: isAr ? 'المستشار الملكي' : 'Royal Advisor', icon: MessageSquareCode },
-    { id: Tool.CREATIVE, label: isAr ? 'خزانة الصور' : 'Vault of Art', icon: Palette },
-    { id: Tool.EXPLORE, label: isAr ? 'عين المملكة' : 'Kingdom Eye', icon: Globe2 },
+    { id: Tool.DASHBOARD, label: isAr ? 'الرئيسية' : 'Home', icon: LayoutDashboard },
+    { id: Tool.CHAT, label: isAr ? 'روبي AI' : 'Ruby AI', icon: MessageSquareCode },
+    { id: Tool.CREATIVE, label: isAr ? 'الفن' : 'Art', icon: Palette },
+    { id: Tool.EXPLORE, label: isAr ? 'الويب' : 'Web', icon: Globe2 },
   ];
 
   return (
     <>
-      {/* Overlay for mobile */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/80 backdrop-blur-sm z-30 lg:hidden"
@@ -32,19 +30,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, setActiveTool, isOpen, se
         />
       )}
       
-      <aside className={`fixed lg:relative inset-y-0 left-0 z-40 ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:w-80 w-80 transition-transform duration-500 bg-black/95 border-r border-red-900/30 flex flex-col shadow-2xl`}>
-        <div className="p-8 flex-1">
-          <div className="mb-12 flex items-center justify-between lg:justify-center">
+      <aside className={`fixed lg:relative inset-y-0 left-0 z-40 ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:w-64 w-64 transition-transform duration-500 bg-black/95 border-r border-red-900/30 flex flex-col shadow-2xl`}>
+        <div className="p-6 flex-1">
+          <div className="mb-8 flex items-center justify-between">
               <div className="relative group">
-                  <div className="absolute inset-0 bg-red-600 rounded-full blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                  <Diamond className="w-12 h-12 text-red-500 red-glow transform group-hover:rotate-45 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-red-600 rounded-full blur-xl opacity-10 group-hover:opacity-30 transition-opacity"></div>
+                  <Diamond className="w-8 h-8 text-red-500 red-glow" />
               </div>
-              <button onClick={() => setIsOpen(false)} className="lg:hidden p-3 bg-red-900/20 rounded-xl text-red-400">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsOpen(false)} className="lg:hidden p-2 bg-red-900/10 rounded-lg text-red-400">
+                <X className="w-4 h-4" />
               </button>
           </div>
           
-          <nav className="space-y-3">
+          <nav className="space-y-1.5">
             {menuItems.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -52,28 +50,25 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTool, setActiveTool, isOpen, se
                     setActiveTool(id);
                     if (window.innerWidth < 1024) setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-5 px-6 py-5 rounded-[1.5rem] transition-all duration-500 group relative ${
+                className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 group relative ${
                   activeTool === id 
-                    ? 'bg-gradient-to-br from-red-700 to-red-950 text-white shadow-lg shadow-red-950/40' 
-                    : 'text-red-200/40 hover:bg-red-900/20 hover:text-white'
+                    ? 'bg-gradient-to-br from-red-700 to-red-900 text-white' 
+                    : 'text-red-200/40 hover:bg-red-900/10 hover:text-white'
                 }`}
               >
-                <Icon className={`w-5 h-5 transition-all group-hover:scale-125 ${activeTool === id ? 'text-red-400' : ''}`} />
-                <span className="font-bold text-[10px] uppercase tracking-widest">{label}</span>
-                {activeTool === id && (
-                    <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-red-400 pulse-active"></div>
-                )}
+                <Icon className={`w-4 h-4 transition-all ${activeTool === id ? 'text-red-300' : ''}`} />
+                <span className="font-bold text-[9px] uppercase tracking-widest">{label}</span>
               </button>
             ))}
           </nav>
         </div>
 
-        <div className="p-8 border-t border-red-900/20 bg-red-950/10">
-          <div className="flex items-center gap-3 bg-red-900/20 p-4 rounded-2xl border border-red-900/10">
-              <Sparkles className="w-5 h-5 text-red-500" />
+        <div className="p-6 border-t border-red-900/10 bg-red-950/5">
+          <div className="flex items-center gap-2 bg-red-900/10 p-3 rounded-xl border border-red-900/10">
+              <Sparkles className="w-4 h-4 text-red-500" />
               <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-red-100 uppercase tracking-tighter">Yaqoot Core v2.0</span>
-                  <span className="text-[8px] text-red-400">STATUS: SUPREME</span>
+                  <span className="text-[8px] font-black text-red-100 uppercase">Ruby v2.1</span>
+                  <span className="text-[7px] text-red-400 uppercase tracking-widest">Optimal Status</span>
               </div>
           </div>
         </div>
