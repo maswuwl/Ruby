@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { searchGrounding } from '../services/gemini';
 import { SearchResult } from '../types';
-import { Search, Globe2, ExternalLink, Key, Sparkles, ShieldAlert, RefreshCw } from 'lucide-react';
+import { Search, Globe2, ExternalLink, Key, ShieldAlert, RefreshCw, Info } from 'lucide-react';
 
 interface SearchToolProps {
   isArabic: boolean;
@@ -37,19 +37,19 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
   };
 
   const activateKey = async () => {
-    try {
-      // محاولة الوصول لـ aistudio بشكل مباشر
-      const aiStudio = (window as any).aistudio;
-      if (aiStudio && aiStudio.openSelectKey) {
+    const aiStudio = (window as any).aistudio;
+    if (aiStudio && aiStudio.openSelectKey) {
+      try {
         await aiStudio.openSelectKey();
-        // بمجرد النقر، نفترض النجاح ونخفي رسالة الخطأ لنسمح للمستخدم بالمحاولة مجدداً
-        setErrorType(null);
-      } else {
-        // إذا لم تكن الأداة جاهزة، قد يكون المفتاح مفقوداً في البيئة المحلية
-        alert(isArabic ? "أداة تنشيط المفاتيح غير متوفرة حالياً. تأكد من أنك في بيئة تدعم AI Studio." : "API Key activation tool is unavailable.");
+        setErrorType(null); // نفترض النجاح حسب تعليمات السباق التقني
+      } catch (e) {
+        console.error("Activation failed", e);
       }
-    } catch (err) {
-      console.error("Activation Error:", err);
+    } else {
+      // رسالة واضحة لمستخدمي الاستضافات الخارجية مثل Vercel
+      alert(isArabic 
+        ? "تنبيه: أنت الآن تستخدم نسخة مستضافة خارج AI Studio. لتفعيل ميزة البحث، يجب عليك إضافة مفتاح الـ API الخاص بك في إعدادات (Environment Variables) في Vercel باسم API_KEY."
+        : "Notice: You are running outside AI Studio. To enable search, you must add your API_KEY to Vercel's Environment Variables.");
     }
   };
 
@@ -94,19 +94,28 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
               <h3 className="text-sm font-bold text-white uppercase">{isArabic ? 'تنشيط الصلاحيات الملكية مطلوب' : 'Royal Activation Required'}</h3>
               <p className="text-[11px] text-amber-200/60 leading-relaxed max-w-sm mx-auto">
                 {isArabic 
-                  ? 'ميزة البحث تتطلب مفتاح API مرتبطاً بمشروع مدفوع (Paid Project). اضغط أدناه لاختيار المفتاح الصحيح.' 
-                  : 'Search feature requires a billing-enabled API key. Click below to select the correct key.'}
+                  ? 'ميزة البحث تتطلب مفتاح API مدفوع أو مفعل فيه نظام الفوترة. إذا كنت في Vercel، يرجى ضبط المفتاح في الإعدادات.' 
+                  : 'Search feature requires a billing-enabled API key. If on Vercel, please set the key in project settings.'}
               </p>
            </div>
-           <button 
-             onClick={activateKey} 
-             className="flex items-center gap-3 mx-auto px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[11px] font-black uppercase transition-all shadow-xl shadow-amber-600/30 active:scale-95"
-           >
-             <Key className="w-3.5 h-3.5" /> {isArabic ? 'تنشيط المفتاح الآن' : 'Activate Key Now'}
-           </button>
-           <p className="text-[9px] text-amber-500/30 uppercase">
-             {isArabic ? 'بعد التنشيط، يمكنك محاولة البحث مرة أخرى مباشرة' : 'Try searching again immediately after activation'}
-           </p>
+           
+           <div className="flex flex-col gap-3">
+             <button 
+               onClick={activateKey} 
+               className="flex items-center gap-3 mx-auto px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[11px] font-black uppercase transition-all shadow-xl shadow-amber-600/30 active:scale-95"
+             >
+               <Key className="w-3.5 h-3.5" /> {isArabic ? 'محاولة التنشيط التلقائي' : 'Try Auto Activation'}
+             </button>
+             
+             <div className="flex items-start gap-2 max-w-xs mx-auto text-left p-3 bg-red-950/20 rounded-xl border border-red-900/10">
+               <Info className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+               <p className="text-[9px] text-red-200/50 uppercase leading-tight">
+                 {isArabic 
+                   ? "ملاحظة لـ Vercel: ميزة البحث تعتمد على وجود مفتاح API صالح في إعدادات البيئة (Environment Variables) للمشروع." 
+                   : "Vercel Tip: Search relies on a valid API_KEY set in your project's Environment Variables."}
+               </p>
+             </div>
+           </div>
         </div>
       )}
 

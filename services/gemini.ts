@@ -6,8 +6,8 @@ import { GoogleGenAI } from "@google/genai";
  */
 const getAI = () => {
   const apiKey = process.env.API_KEY;
-  // إذا كان المفتاح غير موجود، نرمي خطأ مخصصاً لتعرفه المكونات
-  if (!apiKey || apiKey === "undefined" || apiKey.length < 5) {
+  // إذا كان المفتاح غير موجود أو غير صالح
+  if (!apiKey || apiKey === "undefined" || apiKey === "" || apiKey.length < 10) {
     throw new Error("API_KEY_REQUIRED");
   }
   return new GoogleGenAI({ apiKey });
@@ -26,7 +26,7 @@ export const chatWithGemini = async (message: string) => {
     return response.text || "Processed.";
   } catch (err: any) {
     console.error("Chat Error:", err.message);
-    if (err.message?.includes("API_KEY_REQUIRED") || err.message?.includes("not found") || err.message?.includes("401")) {
+    if (err.message?.includes("API_KEY_REQUIRED") || err.message?.includes("key") || err.message?.includes("401")) {
       return "ERROR_KEY_REQUIRED";
     }
     return "حدث خطأ في الاتصال بنظام روبي.";
@@ -36,6 +36,7 @@ export const chatWithGemini = async (message: string) => {
 export const searchGrounding = async (query: string) => {
   try {
     const ai = getAI();
+    // نستخدم موديل فلاش لأنه الأسرع والأكثر توافقاً مع أدوات البحث
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: query,
@@ -55,11 +56,14 @@ export const searchGrounding = async (query: string) => {
     return { text, sources, error: null };
   } catch (err: any) {
     console.error("Search Logic Error:", err.message);
-    // 404 أو "not found" تعني غالباً أن الموديل/الميزة غير متوفرة لهذا المفتاح
-    if (err.message?.includes("entity was not found") || err.message?.includes("404") || err.message?.includes("API_KEY_REQUIRED")) {
+    // معالجة خطأ الصلاحيات أو فقدان المفتاح
+    if (err.message?.includes("entity was not found") || 
+        err.message?.includes("permission") || 
+        err.message?.includes("API_KEY_REQUIRED") ||
+        err.message?.includes("403")) {
       return { text: "", sources: [], error: "ERROR_KEY_REQUIRED" };
     }
-    return { text: "تعذر إتمام البحث الذكي حالياً.", sources: [], error: "GENERIC" };
+    return { text: "تعذر إتمام البحث الذكي. يرجى التأكد من صلاحيات المفتاح.", sources: [], error: "GENERIC" };
   }
 };
 
