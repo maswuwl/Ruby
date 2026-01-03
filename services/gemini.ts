@@ -1,11 +1,13 @@
 
 import { GoogleGenAI } from "@google/genai";
 
+/**
+ * إنشاء نسخة من المحرك تستخدم دائماً أحدث مفتاح محقون
+ */
 const getAI = () => {
-  // الاعتماد المباشر على مفتاح البيئة المحقون
-  const key = process.env.API_KEY;
-  if (!key) throw new Error("API_KEY_MISSING");
-  return new GoogleGenAI({ apiKey: key });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) throw new Error("API_KEY_MISSING");
+  return new GoogleGenAI({ apiKey });
 };
 
 export const chatWithGemini = async (message: string) => {
@@ -15,26 +17,27 @@ export const chatWithGemini = async (message: string) => {
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: message }] }],
       config: {
-        systemInstruction: "You are Ruby, a minimalist royal AI engineer. Be concise and professional.",
+        systemInstruction: "You are Ruby, a professional royal AI. Use very concise language. Font style: Minimalist.",
       }
     });
-    return response.text || "Ruby system processed your request.";
+    return response.text || "Processed.";
   } catch (err: any) {
-    console.error("Gemini Error:", err);
-    if (err.message === "API_KEY_MISSING" || err.message?.includes("entity was not found")) {
-      return "ERROR_KEY_MISSING";
-    }
-    return "خطأ في الاتصال. يرجى التحقق من المفتاح.";
+    console.error("Chat Error:", err.message);
+    if (err.message?.includes("not found") || err.message?.includes("key")) return "ERROR_KEY_REQUIRED";
+    return "خطأ في الاتصال بنظام روبي.";
   }
 };
 
 export const searchGrounding = async (query: string) => {
   try {
     const ai = getAI();
+    // نستخدم gemini-2.0-flash-exp أو gemini-1.5-flash لضمان توافق أكبر مع أدوات البحث
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: query,
-      config: { tools: [{ googleSearch: {} }] },
+      config: { 
+        tools: [{ googleSearch: {} }] 
+      },
     });
     
     const text = response.text || '';
@@ -47,10 +50,12 @@ export const searchGrounding = async (query: string) => {
       }));
     return { text, sources, error: null };
   } catch (err: any) {
-    if (err.message === "API_KEY_MISSING" || err.message?.includes("entity was not found")) {
-      return { text: "", sources: [], error: "ERROR_KEY_MISSING" };
+    console.error("Search Logic Error:", err.message);
+    // إذا كان الخطأ متعلقاً بالصلاحيات أو "Entity not found"
+    if (err.message?.includes("entity was not found") || err.message?.includes("permission") || err.message?.includes("404")) {
+      return { text: "", sources: [], error: "ERROR_KEY_REQUIRED" };
     }
-    return { text: "فشل البحث حالياً.", sources: [], error: "GENERIC" };
+    return { text: "تعذر إتمام البحث. قد يحتاج المفتاح لتفعيل ميزة البحث.", sources: [], error: "GENERIC" };
   }
 };
 
@@ -65,11 +70,9 @@ export const generateImage = async (prompt: string) => {
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) return { url: `data:image/png;base64,${part.inlineData.data}`, error: null };
     }
-    return { url: null, error: "No image" };
+    return { url: null, error: "NO_IMAGE" };
   } catch (err: any) {
-    if (err.message === "API_KEY_MISSING" || err.message?.includes("entity was not found")) {
-      return { url: null, error: "ERROR_KEY_MISSING" };
-    }
+    if (err.message?.includes("not found")) return { url: null, error: "ERROR_KEY_REQUIRED" };
     return { url: null, error: "GENERIC" };
   }
 };
