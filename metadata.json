@@ -1,0 +1,9 @@
+{
+  "name": "Yaqoot AI - Royal Edition",
+  "description": "Premium AI Platform with Voice, Video, Image analysis, and Royal Red Aesthetic.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone",
+    "camera"
+  ]
+}
