@@ -59,10 +59,6 @@
         ::-webkit-scrollbar-track { background: #1a0505; }
         ::-webkit-scrollbar-thumb { background: #991b1b; border-radius: 10px; }
     </style>
-    <script>
-        // تثبيت كائن process لمنع الأخطاء في المتصفح قبل تحميل الموديلات
-        window.process = { env: { API_KEY: "" } };
-    </script>
 <script type="importmap">
 {
   "imports": {
@@ -81,7 +77,6 @@
 <body>
     <div class="wavy-bg"></div>
     <div id="root"></div>
-    <!-- السطر التالي هو الأهم لتشغيل التطبيق -->
     <script type="module" src="index.tsx"></script>
 </body>
 </html>
