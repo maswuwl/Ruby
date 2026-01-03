@@ -2,15 +2,14 @@
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * إنشاء نسخة من المحرك تستخدم دائماً أحدث مفتاح محقون في البيئة
+ * الحصول على نسخة من المحرك مع التأكد من وجود المفتاح
  */
 const getAI = () => {
   const apiKey = process.env.API_KEY;
-  // إذا كان المفتاح غير موجود أو غير صالح
   if (!apiKey || apiKey === "undefined" || apiKey === "" || apiKey.length < 10) {
     throw new Error("API_KEY_REQUIRED");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: apiKey });
 };
 
 export const chatWithGemini = async (message: string) => {
@@ -26,7 +25,8 @@ export const chatWithGemini = async (message: string) => {
     return response.text || "Processed.";
   } catch (err: any) {
     console.error("Chat Error:", err.message);
-    if (err.message?.includes("API_KEY_REQUIRED") || err.message?.includes("key") || err.message?.includes("401")) {
+    const msg = err.message?.toLowerCase() || "";
+    if (msg.includes("key") || msg.includes("not found") || msg.includes("401") || msg.includes("required")) {
       return "ERROR_KEY_REQUIRED";
     }
     return "حدث خطأ في الاتصال بنظام روبي.";
@@ -36,7 +36,6 @@ export const chatWithGemini = async (message: string) => {
 export const searchGrounding = async (query: string) => {
   try {
     const ai = getAI();
-    // نستخدم موديل فلاش لأنه الأسرع والأكثر توافقاً مع أدوات البحث
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: query,
@@ -56,14 +55,12 @@ export const searchGrounding = async (query: string) => {
     return { text, sources, error: null };
   } catch (err: any) {
     console.error("Search Logic Error:", err.message);
-    // معالجة خطأ الصلاحيات أو فقدان المفتاح
-    if (err.message?.includes("entity was not found") || 
-        err.message?.includes("permission") || 
-        err.message?.includes("API_KEY_REQUIRED") ||
-        err.message?.includes("403")) {
+    const msg = err.message?.toLowerCase() || "";
+    // إذا كان الخطأ "entity was not found" نعيد خطأ المفتاح لتنشيطه مجدداً كما في التعليمات
+    if (msg.includes("entity was not found") || msg.includes("key") || msg.includes("403") || msg.includes("required")) {
       return { text: "", sources: [], error: "ERROR_KEY_REQUIRED" };
     }
-    return { text: "تعذر إتمام البحث الذكي. يرجى التأكد من صلاحيات المفتاح.", sources: [], error: "GENERIC" };
+    return { text: "تعذر إتمام البحث الذكي.", sources: [], error: "GENERIC" };
   }
 };
 
@@ -80,7 +77,8 @@ export const generateImage = async (prompt: string) => {
     }
     return { url: null, error: "NO_IMAGE" };
   } catch (err: any) {
-    if (err.message?.includes("API_KEY_REQUIRED") || err.message?.includes("not found")) {
+    const msg = err.message?.toLowerCase() || "";
+    if (msg.includes("key") || msg.includes("not found") || msg.includes("required")) {
       return { url: null, error: "ERROR_KEY_REQUIRED" };
     }
     return { url: null, error: "GENERIC" };

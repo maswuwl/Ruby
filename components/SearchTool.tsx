@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { searchGrounding } from '../services/gemini';
 import { SearchResult } from '../types';
-import { Search, Globe2, ExternalLink, Key, ShieldAlert, RefreshCw, Info } from 'lucide-react';
+import { Search, Globe2, ExternalLink, Key, ShieldAlert, RefreshCw, Info, Lock } from 'lucide-react';
 
 interface SearchToolProps {
   isArabic: boolean;
@@ -41,15 +41,12 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
     if (aiStudio && aiStudio.openSelectKey) {
       try {
         await aiStudio.openSelectKey();
-        setErrorType(null); // نفترض النجاح حسب تعليمات السباق التقني
+        setErrorType(null); 
       } catch (e) {
         console.error("Activation failed", e);
       }
     } else {
-      // رسالة واضحة لمستخدمي الاستضافات الخارجية مثل Vercel
-      alert(isArabic 
-        ? "تنبيه: أنت الآن تستخدم نسخة مستضافة خارج AI Studio. لتفعيل ميزة البحث، يجب عليك إضافة مفتاح الـ API الخاص بك في إعدادات (Environment Variables) في Vercel باسم API_KEY."
-        : "Notice: You are running outside AI Studio. To enable search, you must add your API_KEY to Vercel's Environment Variables.");
+      setErrorType("MANUAL_CONFIG");
     }
   };
 
@@ -94,28 +91,47 @@ const SearchTool: React.FC<SearchToolProps> = ({ isArabic }) => {
               <h3 className="text-sm font-bold text-white uppercase">{isArabic ? 'تنشيط الصلاحيات الملكية مطلوب' : 'Royal Activation Required'}</h3>
               <p className="text-[11px] text-amber-200/60 leading-relaxed max-w-sm mx-auto">
                 {isArabic 
-                  ? 'ميزة البحث تتطلب مفتاح API مدفوع أو مفعل فيه نظام الفوترة. إذا كنت في Vercel، يرجى ضبط المفتاح في الإعدادات.' 
-                  : 'Search feature requires a billing-enabled API key. If on Vercel, please set the key in project settings.'}
+                  ? 'ميزة البحث تتطلب مفتاح API مدفوع مرتبط بمشروع جوجل. اضغط أدناه للتنشيط.' 
+                  : 'Search feature requires a paid Google Cloud Project API key. Click below to activate.'}
               </p>
            </div>
            
-           <div className="flex flex-col gap-3">
-             <button 
-               onClick={activateKey} 
-               className="flex items-center gap-3 mx-auto px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[11px] font-black uppercase transition-all shadow-xl shadow-amber-600/30 active:scale-95"
-             >
-               <Key className="w-3.5 h-3.5" /> {isArabic ? 'محاولة التنشيط التلقائي' : 'Try Auto Activation'}
-             </button>
-             
-             <div className="flex items-start gap-2 max-w-xs mx-auto text-left p-3 bg-red-950/20 rounded-xl border border-red-900/10">
-               <Info className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-               <p className="text-[9px] text-red-200/50 uppercase leading-tight">
-                 {isArabic 
-                   ? "ملاحظة لـ Vercel: ميزة البحث تعتمد على وجود مفتاح API صالح في إعدادات البيئة (Environment Variables) للمشروع." 
-                   : "Vercel Tip: Search relies on a valid API_KEY set in your project's Environment Variables."}
-               </p>
-             </div>
+           <button 
+             onClick={activateKey} 
+             className="flex items-center gap-3 mx-auto px-8 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[11px] font-black uppercase transition-all shadow-xl shadow-amber-600/30 active:scale-95"
+           >
+             <Key className="w-3.5 h-3.5" /> {isArabic ? 'تنشيط المفتاح الآن' : 'Activate Key Now'}
+           </button>
+        </div>
+      )}
+
+      {errorType === "MANUAL_CONFIG" && (
+        <div className="glass p-8 rounded-[2rem] border-red-500/20 text-center space-y-6 animate-in zoom-in-95">
+           <div className="relative mx-auto w-16 h-16">
+             <Lock className="w-16 h-16 text-red-500 absolute inset-0" />
+             <div className="absolute inset-0 bg-red-500 blur-2xl opacity-20 animate-pulse"></div>
            </div>
+           <div className="space-y-2">
+              <h3 className="text-sm font-black text-white uppercase tracking-tighter">
+                {isArabic ? 'تنبيه: النسخة الخارجية مفعلة' : 'External Deployment Detected'}
+              </h3>
+              <div className="bg-red-950/30 p-4 rounded-2xl border border-red-900/20 text-left">
+                <p className="text-[11px] text-red-100/70 leading-relaxed">
+                  {isArabic 
+                    ? 'بما أنك تشغل التطبيق على Vercel، لا يمكن استخدام زر التنشيط التلقائي. يرجى اتباع البروتوكول التالي:' 
+                    : 'Running on Vercel prevents automatic key selection. Please follow the protocol below:'}
+                </p>
+                <ol className="mt-3 space-y-2 text-[10px] text-red-400 list-decimal list-inside font-bold">
+                  <li>{isArabic ? 'اذهب إلى إعدادات مشروعك في Vercel' : 'Go to Vercel Project Settings'}</li>
+                  <li>{isArabic ? 'أضف متغير بيئة جديد باسم API_KEY' : 'Add Environment Variable: API_KEY'}</li>
+                  <li>{isArabic ? 'ضع مفتاحك المدفوع في القيمة' : 'Set your Paid API Key as the value'}</li>
+                  <li>{isArabic ? 'أعد نشر التطبيق لتفعيل الصلاحيات' : 'Redeploy the application'}</li>
+                </ol>
+              </div>
+           </div>
+           <button onClick={() => setErrorType(null)} className="text-[9px] text-red-500 font-black uppercase hover:underline">
+             {isArabic ? 'إغلاق التنبيه' : 'Dismiss Intel'}
+           </button>
         </div>
       )}
 

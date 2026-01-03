@@ -20,7 +20,7 @@ const ImageGen: React.FC<ImageGenProps> = ({ isArabic }) => {
     setErrorType(null);
     try {
       const result = await generateImage(prompt);
-      if (result.error === "ERROR_KEY_MISSING") {
+      if (result.error === "ERROR_KEY_REQUIRED") {
         setErrorType("KEY");
       } else if (result.url) {
         setHistory(prev => [{ url: result.url as string, prompt, timestamp: new Date() }, ...prev]);
@@ -36,9 +36,14 @@ const ImageGen: React.FC<ImageGenProps> = ({ isArabic }) => {
   };
 
   const openKeyDialog = async () => {
-    if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
-      window.location.reload();
+    const aiStudio = (window as any).aistudio;
+    if (aiStudio && aiStudio.openSelectKey) {
+      await aiStudio.openSelectKey();
+      setErrorType(null);
+    } else {
+      alert(isArabic 
+        ? "يرجى ضبط مفتاح الـ API في إعدادات البيئة لتشغيل المزايا الفنية." 
+        : "Please set API_KEY in environment variables to enable art features.");
     }
   };
 
@@ -77,7 +82,7 @@ const ImageGen: React.FC<ImageGenProps> = ({ isArabic }) => {
                 <span className="text-[10px] font-bold uppercase">{isArabic ? 'يتطلب مفتاح API' : 'API Key Required'}</span>
              </div>
              <button onClick={openKeyDialog} className="flex items-center gap-2 mx-auto px-4 py-2 bg-amber-600 text-white rounded-full text-[9px] font-black uppercase shadow-lg shadow-amber-600/20">
-               <Key className="w-3 h-3" /> {isArabic ? 'ربط المفتاح' : 'Link Key'}
+               <Key className="w-3 h-3" /> {isArabic ? 'تنشيط المفتاح' : 'Activate Key'}
              </button>
           </div>
         )}
